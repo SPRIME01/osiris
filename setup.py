@@ -8,7 +8,7 @@ with io.open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 install_requires = [
-    "Flask==3.0.3",
+    "Flask==3.1.3",
     "numpy==1.26.4",
     "mss==9.0.1",
     "sentence-transformers==3.0.0",
@@ -17,7 +17,7 @@ install_requires = [
     "shapely==2.0.4",
     "h5py==3.11.0",
     "rapidfuzz==3.9.3",
-    "Pillow==10.3.0",
+    "Pillow==12.1.1",
 ]
 
 # Define OS-specific dependencies
