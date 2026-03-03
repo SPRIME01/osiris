@@ -4,11 +4,11 @@ import numpy as np
 from flask import Flask, render_template_string, request, send_from_directory
 from jinja2 import BaseLoader
 
-from openrecall.config import appdata_folder, screenshots_path
-from openrecall.database import create_db, get_all_entries, get_timestamps
-from openrecall.nlp import cosine_similarity, get_embedding
-from openrecall.screenshot import record_screenshots_thread
-from openrecall.utils import human_readable_time, timestamp_to_human_readable
+from osiris.config import appdata_folder, screenshots_path
+from osiris.database import create_db, get_all_entries, get_timestamps
+from osiris.nlp import cosine_similarity, get_embedding
+from osiris.screenshot import record_screenshots_thread
+from osiris.utils import human_readable_time, timestamp_to_human_readable
 
 app = Flask(__name__)
 
@@ -21,7 +21,7 @@ base_template = """
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenRecall</title>
+  <title>Osiris</title>
   <!-- Bootstrap CSS -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">

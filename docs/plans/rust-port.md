@@ -1,6 +1,6 @@
 # Osiris → Rust Port Plan
 
-Osiris is a privacy-first, local digital-memory tool (a fork of OpenRecall) that periodically takes screenshots, runs OCR + semantic embeddings on them, stores everything in SQLite, and exposes a timeline + search web UI. Currently the entire application is written in Python (~1,500 LOC across 7 modules). This plan ports every subsystem to idiomatic Rust while preserving all current functionality and cross-platform support (Linux / macOS / Windows).
+Osiris is a privacy-first, local digital-memory tool (a fork of Osiris) that periodically takes screenshots, runs OCR + semantic embeddings on them, stores everything in SQLite, and exposes a timeline + search web UI. Currently the entire application is written in Python (~1,500 LOC across 7 modules). This plan ports every subsystem to idiomatic Rust while preserving all current functionality and cross-platform support (Linux / macOS / Windows).
 
 > [!IMPORTANT]
 > This is a **full rewrite** — the new Rust binary will be a drop-in replacement and read the same SQLite schema and screenshot files as the current Python app.

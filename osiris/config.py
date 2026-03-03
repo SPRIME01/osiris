@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 
-parser = argparse.ArgumentParser(description="OpenRecall")
+parser = argparse.ArgumentParser(description="Osiris")
 
 parser.add_argument(
     "--storage-path",
@@ -20,7 +20,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def get_appdata_folder(app_name="openrecall"):
+def get_appdata_folder(app_name="osiris"):
     if sys.platform == "win32":
         appdata = os.getenv("APPDATA")
         if not appdata:
