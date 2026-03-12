@@ -1,11 +1,11 @@
-# Encrypting Your OpenRecall Data
+# Encrypting Your Osiris Data
 
-A sensible option to protect your (potentially sensitive) OpenRecall data is to use an external storage device, such as a USB stick or SD card (for MacBook Pro or laptops) with real-time disk encryption enabled. On Windows, BitLocker can be used. On macOS, you can create an encrypted disk image. On Linux, LUKS can be used to encrypt the disk. Before encrypting/formatting your storage device, ensure you have backed up any important data as the process will erase all existing data on the device. The OpenRecall project or its maintainers are not responsible for any data that can be damaged or lost during the below process or due to the use of OpenRecall.
+A sensible option to protect your (potentially sensitive) Osiris data is to use an external storage device, such as a USB stick or SD card (for MacBook Pro or laptops) with real-time disk encryption enabled. On Windows, BitLocker can be used. On macOS, you can create an encrypted disk image. On Linux, LUKS can be used to encrypt the disk. Before encrypting/formatting your storage device, ensure you have backed up any important data as the process will erase all existing data on the device. The Osiris project or its maintainers are not responsible for any data that can be damaged or lost during the below process or due to the use of Osiris.
 
-There are several benefits to using an encrypted disk for your OpenRecall data:
+There are several benefits to using an encrypted disk for your Osiris data:
 - **Privacy**: Your data is encrypted and can only be accessed with the correct password.
 - **Security**: In the event of loss or theft, your data is protected.
-- **Portability**: You can easily move your OpenRecall data between different devices (using the same encryption software).
+- **Portability**: You can easily move your Osiris data between different devices (using the same encryption software).
 - **Peace of Mind**: You can rest easy knowing your data is secure.
 - **Physical Control**: You have full, physical, control over your data, unlike cloud storage solutions. If you take the disk out of your computer, your data is safe and offline.
 
@@ -24,8 +24,8 @@ We strongly recommend to choose a strong password for your encrypted disk. A str
 7. Select **Compatible mode** to use the drive on older versions of Windows.
 8. Click **Start Encrypting**.
 9. Wait for the encryption process to complete.
-10. Create an OpenRecall folder on the encrypted disk.
-11. Launch OpenRecall with the argument`--storage-path "<path to your OpenRecall folder on the encrypted disk>"`
+10. Create an Osiris folder on the encrypted disk.
+11. Launch Osiris with the argument`--storage-path "<path to your Osiris folder on the encrypted disk>"`
 
 ## macOS (Encrypted Disk Image)
 1. Insert your USB stick or SD card into your Mac.
@@ -39,7 +39,7 @@ We strongly recommend to choose a strong password for your encrypted disk. A str
 9. Set **Image Format** to **read/write**.
 10. Click **Save** and wait for the disk image to be created.
 11. Mount the disk image, and find its path in Finder by right-clicking on the disk image and selecting **Get Info**. The path is displayed next to **Where**.
-12.  and launch OpenRecall with the argument `--storage-path "/Volumes/<name of your volume>"`.
+12.  and launch Osiris with the argument `--storage-path "/Volumes/<name of your volume>"`.
 
 ## Linux (LUKS)
 1. Insert your USB stick or SD card into your computer.
@@ -51,6 +51,6 @@ We strongly recommend to choose a strong password for your encrypted disk. A str
 7. Open the LUKS partition: `sudo cryptsetup luksOpen /dev/sdX1 encrypted_drive`.
 8. Create a filesystem on the encrypted partition: `sudo mkfs.ext4 /dev/mapper/encrypted_drive`.
 9. Mount the encrypted partition: `sudo mount /dev/mapper/encrypted_drive /mnt`.
-10. Launch OpenRecall with the argument `--storage-path "/mnt"`.
+10. Launch Osiris with the argument `--storage-path "/mnt"`.
 11.  To unmount and close the encrypted partition: `sudo umount /mnt` followed by `sudo cryptsetup luksClose encrypted_drive`.
 

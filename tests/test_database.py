@@ -6,18 +6,18 @@ import time
 import numpy as np
 from unittest.mock import patch
 
-# Temporarily adjust path to import from openrecall
+# Temporarily adjust path to import from osiris
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Now import from openrecall.database, mocking db_path *before* the import
+# Now import from osiris.database, mocking db_path *before* the import
 # Create a temporary file path that will be used by the mock
 temp_db_file = tempfile.NamedTemporaryFile(delete=False)
 mock_db_path = temp_db_file.name
 temp_db_file.close() # Close the file handle, but the file persists because delete=False
 
-with patch('openrecall.config.db_path', mock_db_path):
-    from openrecall.database import (
+with patch('osiris.config.db_path', mock_db_path):
+    from osiris.database import (
         create_db,
         insert_entry,
         get_all_entries,
@@ -25,8 +25,8 @@ with patch('openrecall.config.db_path', mock_db_path):
         Entry,
     )
     # Also patch db_path within the database module itself if it was imported directly there
-    import openrecall.database
-    openrecall.database.db_path = mock_db_path
+    import osiris.database
+    osiris.database.db_path = mock_db_path
 
 
 class TestDatabase(unittest.TestCase):
