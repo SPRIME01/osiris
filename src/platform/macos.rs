@@ -23,9 +23,19 @@ pub fn get_active_window_title() -> String {
         return String::new();
     }
 
+    // Sanitize the app name before embedding it in an AppleScript string literal:
+    // - Escape backslashes first (must come before the quote escape).
+    // - Escape double-quotes so the name cannot close the string delimiter.
+    // - Strip newlines and carriage returns to prevent multi-line script injection.
+    let safe_app_name = app_name
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "")
+        .replace('\r', "");
+
     let script = format!(
         r#"tell application "System Events" to tell process "{}" to get name of front window"#,
-        app_name
+        safe_app_name
     );
 
     let output = Command::new("osascript")

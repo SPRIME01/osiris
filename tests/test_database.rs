@@ -6,7 +6,8 @@ use osiris::db;
 
 #[test]
 fn test_database_operations() {
-    let db_path = PathBuf::from("/tmp/osiris_test.db");
+    // Use the platform-appropriate temp directory instead of a hard-coded Unix path.
+    let db_path: PathBuf = std::env::temp_dir().join("osiris_test.db");
     let _ = fs::remove_file(&db_path);
 
     db::create_db(&db_path).unwrap();

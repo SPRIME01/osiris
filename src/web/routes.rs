@@ -5,11 +5,18 @@ use axum::{
     routing::get,
     Router,
 };
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tera::{Context, Tera};
 use tokio::fs;
+
+lazy_static! {
+    // Only allow Unix-timestamp-based filenames with a safe image extension.
+    static ref SAFE_FILENAME: Regex = Regex::new(r"^\d+\.(webp|png)$").unwrap();
+}
 
 use crate::config::Config;
 use crate::db::{get_all_entries, get_timestamps, Entry};
@@ -129,17 +136,37 @@ async fn serve_image(
     State(state): State<AppState>,
     AxumPath(filename): AxumPath<String>,
 ) -> impl IntoResponse {
+    // Enforce a strict filename pattern: only Unix timestamps followed by .webp or .png.
+    // This rejects any path traversal attempts (e.g. "../", "%2f", etc.) upfront.
+    if !SAFE_FILENAME.is_match(&filename) {
+        return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+    }
+
     let screenshots_path = state.config.screenshots_path();
     let filepath = screenshots_path.join(&filename);
 
-    match fs::read(&filepath).await {
+    // Canonicalize both paths and verify the resolved file is still inside the
+    // screenshots directory, guarding against any remaining traversal edge cases.
+    let canonical_base = match screenshots_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => return (StatusCode::NOT_FOUND, "Image not found").into_response(),
+    };
+    let canonical_file = match filepath.canonicalize() {
+        Ok(p) => p,
+        Err(_) => return (StatusCode::NOT_FOUND, "Image not found").into_response(),
+    };
+    if !canonical_file.starts_with(&canonical_base) {
+        return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+    }
+
+    match fs::read(&canonical_file).await {
         Ok(data) => {
+            // The regex above guarantees the extension is either "webp" or "png".
             let content_type = if filename.ends_with(".webp") {
                 "image/webp"
-            } else if filename.ends_with(".png") {
-                "image/png"
             } else {
-                "application/octet-stream"
+                // Must be ".png" per the SAFE_FILENAME regex.
+                "image/png"
             };
 
             ([(axum::http::header::CONTENT_TYPE, content_type)], data).into_response()
