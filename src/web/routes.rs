@@ -98,13 +98,17 @@ async fn search(
 
     let mut scored_entries: Vec<(f32, Entry)> = entries
         .into_iter()
-        .map(|entry| {
+        .filter_map(|entry| {
+            if entry.embedding.len() % 4 != 0 {
+                tracing::warn!("Skipping entry with invalid embedding length: {}", entry.id);
+                return None;
+            }
             let embedding_f32: Vec<f32> = entry.embedding
                 .chunks_exact(4)
-                .map(|b| f32::from_ne_bytes(b.try_into().unwrap()))
+                .filter_map(|b| b.try_into().ok().map(f32::from_ne_bytes))
                 .collect();
             let score = cosine_similarity(&query_embedding, &embedding_f32);
-            (score, entry)
+            Some((score, entry))
         })
         .collect();
 
@@ -129,6 +133,11 @@ async fn serve_image(
     State(state): State<AppState>,
     AxumPath(filename): AxumPath<String>,
 ) -> impl IntoResponse {
+    // Robust path traversal protection
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") || !filename.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_') {
+        return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+    }
+
     let screenshots_path = state.config.screenshots_path();
     let filepath = screenshots_path.join(&filename);
 

@@ -56,10 +56,12 @@ async fn main() -> anyhow::Result<()> {
         embedder: embedder_arc.clone(),
     };
 
-    // Spawn the background recording thread
+    // Spawn the background recording thread on a dedicated OS thread.
+    // This avoids permanently occupying a tokio::spawn_blocking worker thread
+    // with an infinite loop that uses std::thread::sleep.
     let record_config = config.clone();
     let record_embedder = embedder_arc.clone();
-    tokio::task::spawn_blocking(move || {
+    std::thread::spawn(move || {
         record_screenshots_thread(record_config, record_embedder);
     });
 

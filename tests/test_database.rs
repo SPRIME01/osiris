@@ -1,13 +1,14 @@
 use std::path::PathBuf;
-use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use tempfile::tempdir;
 
 use osiris::db;
 
 #[test]
 fn test_database_operations() {
-    let db_path = PathBuf::from("/tmp/osiris_test.db");
-    let _ = fs::remove_file(&db_path);
+    let dir = tempdir().unwrap();
+    let db_path: PathBuf = dir.path().join("osiris_test.db");
 
     db::create_db(&db_path).unwrap();
 
@@ -38,6 +39,4 @@ fn test_database_operations() {
     // Get timestamps
     let timestamps = db::get_timestamps(&db_path).unwrap();
     assert_eq!(timestamps, vec![ts2, ts1]);
-
-    let _ = fs::remove_file(&db_path);
 }

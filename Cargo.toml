@@ -33,4 +33,7 @@ psutil = "3.3.0"
 # We'll use std::process::Command for xprop/xprintidle for now
 
 [target.'cfg(target_os = "macos")'.dependencies]
+
+[dev-dependencies]
+tempfile = "3.27.0"
 # We'll use std::process::Command for ioreg/osascript for now

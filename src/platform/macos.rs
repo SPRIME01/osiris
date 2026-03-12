@@ -23,9 +23,12 @@ pub fn get_active_window_title() -> String {
         return String::new();
     }
 
+    // Properly escape double quotes and backslashes in app_name
+    let escaped_app_name = app_name.replace('\\', r"\\").replace('"', r#"\""#);
+
     let script = format!(
         r#"tell application "System Events" to tell process "{}" to get name of front window"#,
-        app_name
+        escaped_app_name
     );
 
     let output = Command::new("osascript")
