@@ -11,8 +11,15 @@ pub struct Entry {
     pub embedding: Vec<u8>,
 }
 
-pub fn create_db(db_path: &Path) -> Result<()> {
+pub fn open_connection(db_path: &Path) -> Result<Connection> {
     let conn = Connection::open(db_path)?;
+    // Enable WAL mode for better concurrency (readers don't block writers)
+    conn.execute_batch("PRAGMA journal_mode=WAL;")?;
+    Ok(conn)
+}
+
+pub fn create_db(db_path: &Path) -> Result<()> {
+    let conn = open_connection(db_path)?;
     conn.execute(
         "CREATE TABLE IF NOT EXISTS entries (
              id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,8 +38,7 @@ pub fn create_db(db_path: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn get_all_entries(db_path: &Path) -> Result<Vec<Entry>> {
-    let conn = Connection::open(db_path)?;
+pub fn get_all_entries_conn(conn: &Connection) -> Result<Vec<Entry>> {
     let mut stmt = conn.prepare("SELECT id, app, title, text, timestamp, embedding FROM entries ORDER BY timestamp DESC")?;
 
     let entries_iter = stmt.query_map([], |row| {
@@ -53,8 +59,12 @@ pub fn get_all_entries(db_path: &Path) -> Result<Vec<Entry>> {
     Ok(entries)
 }
 
-pub fn get_timestamps(db_path: &Path) -> Result<Vec<i64>> {
-    let conn = Connection::open(db_path)?;
+pub fn get_all_entries(db_path: &Path) -> Result<Vec<Entry>> {
+    let conn = open_connection(db_path)?;
+    get_all_entries_conn(&conn)
+}
+
+pub fn get_timestamps_conn(conn: &Connection) -> Result<Vec<i64>> {
     let mut stmt = conn.prepare("SELECT timestamp FROM entries ORDER BY timestamp DESC")?;
 
     let timestamps_iter = stmt.query_map([], |row| row.get(0))?;
@@ -66,6 +76,11 @@ pub fn get_timestamps(db_path: &Path) -> Result<Vec<i64>> {
     Ok(timestamps)
 }
 
+pub fn get_timestamps(db_path: &Path) -> Result<Vec<i64>> {
+    let conn = open_connection(db_path)?;
+    get_timestamps_conn(&conn)
+}
+
 pub fn insert_entry(
     db_path: &Path,
     text: &str,
@@ -74,8 +89,18 @@ pub fn insert_entry(
     app: &str,
     title: &str,
 ) -> Result<Option<i64>> {
-    let conn = Connection::open(db_path)?;
+    let conn = open_connection(db_path)?;
+    insert_entry_conn(&conn, text, timestamp, embedding, app, title)
+}
 
+pub fn insert_entry_conn(
+    conn: &Connection,
+    text: &str,
+    timestamp: i64,
+    embedding: &[u8],
+    app: &str,
+    title: &str,
+) -> Result<Option<i64>> {
     let mut stmt = conn.prepare(
         "INSERT INTO entries (text, timestamp, embedding, app, title)
          VALUES (?, ?, ?, ?, ?)

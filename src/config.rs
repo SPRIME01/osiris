@@ -3,6 +3,7 @@ use dirs;
 use std::path::PathBuf;
 use std::fs;
 use std::env;
+use tracing::warn;
 
 #[derive(Parser, Debug, Clone)]
 #[command(name = "osiris", version = "0.8", about = "Osiris")]
@@ -26,16 +27,33 @@ impl Config {
             if let Ok(appdata) = env::var("APPDATA") {
                 PathBuf::from(appdata).join(app_name)
             } else {
-                panic!("APPDATA environment variable is not set.");
+                // APPDATA is not set; fall back to a well-known user-local path.
+                // Using dirs::data_local_dir() mirrors the non-Windows behaviour.
+                dirs::data_local_dir()
+                    .unwrap_or_else(|| PathBuf::from("."))
+                    .join(app_name)
             }
         } else if cfg!(target_os = "macos") {
-            dirs::home_dir().expect("Failed to get home dir").join("Library").join("Application Support").join(app_name)
+            dirs::home_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join("Library")
+                .join("Application Support")
+                .join(app_name)
         } else {
-            dirs::data_local_dir().unwrap_or_else(|| dirs::home_dir().expect("Failed to get home dir").join(".local").join("share")).join(app_name)
+            dirs::data_local_dir()
+                .unwrap_or_else(|| {
+                    dirs::home_dir()
+                        .unwrap_or_else(|| PathBuf::from("."))
+                        .join(".local")
+                        .join("share")
+                })
+                .join(app_name)
         };
 
         if !path.exists() {
-            fs::create_dir_all(&path).expect("Failed to create appdata folder");
+            if let Err(e) = fs::create_dir_all(&path) {
+                warn!("Failed to create appdata folder {:?}: {}", path, e);
+            }
         }
 
         path

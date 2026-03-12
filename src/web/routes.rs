@@ -5,21 +5,24 @@ use axum::{
     routing::get,
     Router,
 };
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tera::{Context, Tera};
 use tokio::fs;
 
 use crate::config::Config;
-use crate::db::{get_all_entries, get_timestamps, Entry};
+use crate::db::{get_all_entries_conn, get_timestamps_conn, Entry};
 use crate::nlp::{cosine_similarity, Embedder};
 
 #[derive(Clone)]
 pub struct AppState {
     pub config: Config,
     pub tera: Tera,
-    // Add Embedder inside a Mutex since its embed() method requires `&mut self`
+    /// Shared database connection. Wrapped in `Arc<Mutex<...>>` so web handlers
+    /// can reuse a single connection rather than opening a new one per request.
+    pub db_conn: Arc<Mutex<Connection>>,
+    /// Embedder requires `&mut self` for inference, so it lives behind a tokio Mutex.
     pub embedder: Arc<tokio::sync::Mutex<Embedder>>,
 }
 
@@ -56,14 +59,18 @@ pub fn create_router(state: AppState) -> Router {
 }
 
 async fn timeline(State(state): State<AppState>) -> impl IntoResponse {
-    let db_path = state.config.db_path();
-    let timestamps = match get_timestamps(&db_path) {
-        Ok(ts) => ts,
-        Err(e) => {
-            tracing::error!("Failed to get timestamps: {}", e);
-            vec![]
+    let timestamps = tokio::task::block_in_place(|| {
+        match state.db_conn.lock() {
+            Ok(conn) => get_timestamps_conn(&conn).unwrap_or_else(|e| {
+                tracing::error!("Failed to get timestamps: {}", e);
+                vec![]
+            }),
+            Err(e) => {
+                tracing::error!("DB lock poisoned: {}", e);
+                vec![]
+            }
         }
-    };
+    });
 
     let mut context = Context::new();
     context.insert("timestamps", &timestamps);
@@ -81,14 +88,18 @@ async fn search(
     State(state): State<AppState>,
     Query(query): Query<SearchQuery>,
 ) -> impl IntoResponse {
-    let db_path = state.config.db_path();
-    let entries = match get_all_entries(&db_path) {
-        Ok(e) => e,
-        Err(e) => {
-            tracing::error!("Failed to get entries: {}", e);
-            vec![]
+    let entries = tokio::task::block_in_place(|| {
+        match state.db_conn.lock() {
+            Ok(conn) => get_all_entries_conn(&conn).unwrap_or_else(|e| {
+                tracing::error!("Failed to get entries: {}", e);
+                vec![]
+            }),
+            Err(e) => {
+                tracing::error!("DB lock poisoned: {}", e);
+                vec![]
+            }
         }
-    };
+    });
 
     // Use tokio's block_in_place for synchronous Embedder logic
     let query_embedding = tokio::task::block_in_place(|| {
@@ -129,6 +140,23 @@ async fn serve_image(
     State(state): State<AppState>,
     AxumPath(filename): AxumPath<String>,
 ) -> impl IntoResponse {
+    // Security: validate filename to prevent path traversal attacks.
+    // Only allow filenames consisting of digits, optional underscore+digits, exactly one dot,
+    // and a safe extension (e.g. "1678886400.webp" or "1678886400_1.webp").
+    let dot_count = filename.chars().filter(|&c| c == '.').count();
+    let valid = !filename.is_empty()
+        && (filename.ends_with(".webp") || filename.ends_with(".png"))
+        && filename
+            .chars()
+            .all(|c| c.is_ascii_digit() || c == '_' || c == '.')
+        && dot_count == 1
+        && !filename.contains('/')
+        && !filename.contains('\\');
+
+    if !valid {
+        return (StatusCode::BAD_REQUEST, "Invalid filename").into_response();
+    }
+
     let screenshots_path = state.config.screenshots_path();
     let filepath = screenshots_path.join(&filename);
 
